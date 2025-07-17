@@ -74,7 +74,7 @@ def check_audio_files(directory, min_count, min_bit, do_split, csv_writer, conso
             audio_path = os.path.join(folder, audios[0])
             cue_path = os.path.join(folder, cues[0])
             global_meta, tracks = parse_cue_file(cue_path)
-            reason = f"CUE 解析成功，共 {len(tracks)} 首，元数据: {global_meta}"
+            reason = f"CUE 解析成功，共 {len(tracks)} 首"
             table.add_row(f"[cyan]{status}[/]", folder, reason)
             csv_writer.writerow([status, folder, reason])
 
