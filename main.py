@@ -1,15 +1,16 @@
-import os
 import argparse
 import csv
+import os
+from collections import defaultdict
+
+import chardet
 from mutagen import File
 from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
-from collections import defaultdict
 from rich.console import Console
 from rich.table import Table
-import chardet
-import subprocess
+
 from utils.cueparser import CueSheet
 
 
@@ -21,7 +22,6 @@ def parse_cue_file(cue_path):
 
     cs = CueSheet()
     cs.setOutputFormat("%performer% - %title%", "%number% - %title%")
-    print(cue_path)
     cs.setData(text)
     cs.parse()
 
@@ -34,20 +34,7 @@ def parse_cue_file(cue_path):
     return global_meta, tracks
 
 
-def split_audio_by_cue(audio_path, cue_path, output_dir, console):
-    os.makedirs(output_dir, exist_ok=True)
-    cmd = [
-        'ffmpeg', '-i', audio_path,
-        '-i', cue_path,
-        '-map_metadata', '1',
-        '-codec', 'copy',
-        os.path.join(output_dir, '%02d_' + os.path.basename(audio_path))
-    ]
-    console.print(f"[green]正在根据 CUE 分割：{audio_path} -> {output_dir}[/]")
-    subprocess.run(cmd, check=True)
-
-
-def check_audio_files(directory, min_count, min_bit, do_split, csv_writer, console):
+def check_audio_files(directory, min_count, min_bit, csv_writer, console):
     audio_extensions = ['.mp3', '.flac', '.m4a', '.wav', '.ogg', '.aac']
     folder_audio = defaultdict(list)
     folder_cues = defaultdict(list)
@@ -77,12 +64,6 @@ def check_audio_files(directory, min_count, min_bit, do_split, csv_writer, conso
             reason = f"CUE 解析成功，共 {len(tracks)} 首"
             table.add_row(f"[cyan]{status}[/]", folder, reason)
             csv_writer.writerow([status, folder, reason])
-
-            if do_split:
-                out_dir = os.path.join(folder, 'split')
-                split_audio_by_cue(audio_path, cue_path, out_dir, console)
-            else:
-                console.print(f"[cyan]{status}[/] 文件夹 '{folder}'，可使用 --split 自动分割，共 {len(tracks)} 首曲目。")
 
         # 文件数量检查
         count = len(audios)
@@ -162,7 +143,6 @@ if __name__ == "__main__":
     parser.add_argument('directory', help='要扫描的目录路径')
     parser.add_argument('--min', type=int, default=2, help='最小音频文件数量阈值 (默认:')
     parser.add_argument('--bit', type=int, default=128, help='最小音频比特率阈值 (默认: 128)')
-    parser.add_argument('--split', action='store_true', help='自动根据 CUE 分割未分割音频文件')
     parser.add_argument('--output', default='results.csv', help='输出CSV文件名 (默认: results.csv)')
 
     args = parser.parse_args()
@@ -173,12 +153,12 @@ if __name__ == "__main__":
 
     console = Console()
     console.print(f"开始扫描目录: [bold]{args.directory}[/]", style="green")
-    console.print(f"检查设置: 比特率阈值([bold]{args.bit}[/]kbps) | 最小文件数([bold]{args.min}[/]) | 自动分割: {args.split}", style="green")
+    console.print(f"检查设置: 比特率阈值([bold]{args.bit}[/]kbps) | 最小文件数([bold]{args.min}[/])", style="green")
     console.print("-" * 60)
 
     with open(args.output, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['状态', '路径', '说明'])
-        check_audio_files(os.path.abspath(args.directory), args.min, args.bit, args.split, writer, console)
+        check_audio_files(os.path.abspath(args.directory), args.min, args.bit, writer, console)
 
     console.print(f"\n扫描完成！结果已保存至 [bold]{args.output}[/]", style="green")
