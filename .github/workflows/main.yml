@@ -21,11 +21,11 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Compile bin
         run: |
-          pyinstaller -n album-check -F main.py -i icon.ico --onefile
+          pyinstaller -n album-check -F main.py --onefile
       - name: upload bin
         uses: actions/upload-artifact@master
         with:
-          name: copymanga-downloader-Linux
+          name: album-check
           path: dist/
                 
       - name: Prepare GH Release Assets
@@ -61,11 +61,11 @@ jobs:
           }
       - name: Compile exe
         run: |
-          pyinstaller -n album-check -F main.py -i icon.ico --onefile
+          pyinstaller -n album-check -F main.py --onefile
       - name: upload exe
         uses: actions/upload-artifact@master
         with:
-          name: copymanga-downloader-windows
+          name: album-check
           path: dist/Windows-copymanga-downloader.exe
 
       - name: Upload GH Release Assets
