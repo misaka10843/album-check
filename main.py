@@ -16,8 +16,8 @@ from utils.cueparser import CueSheet
 
 
 def parse_cue_file(cue_path):
-    with open(cue_path, 'rb') as f:
-        raw = f.read()
+    with open(cue_path, 'rb') as fl:
+        raw = fl.read()
         enc = chardet.detect(raw)['encoding'] or 'utf-8'
     text = raw.decode(enc, errors='ignore')
 
@@ -35,14 +35,14 @@ def parse_cue_file(cue_path):
     return global_meta, tracks
 
 
-def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, console):
+def check_audio_files(directory, min_count, min_bit, c_skip_tags, csv_writer, c_console):
     audio_extensions = ['.mp3', '.flac', '.m4a', '.wav', '.ogg', '.aac']
     folder_audio = defaultdict(list)
     folder_cues = defaultdict(list)
     all_dirs = set()
 
     # 收集文件列表
-    console.print(f"🗃️ 收集文件目录中...", style="cyan")
+    c_console.print(f"🗃️ 收集文件目录中...", style="cyan")
     for root, dirs, files in os.walk(directory):
         all_dirs.add(root)
         for filename in files:
@@ -58,7 +58,7 @@ def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, cons
     table.add_column("说明")
 
     # 检测嵌套文件夹
-    console.print(f"📂 正在检查嵌套文件夹...", style="cyan")
+    c_console.print(f"📂 正在检查嵌套文件夹...", style="cyan")
     for folder in sorted(all_dirs):
         if folder not in folder_audio:
             # 检查是否有子目录包含音频
@@ -72,7 +72,7 @@ def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, cons
                 table.add_row(f"[magenta3]{status}[/]", folder, reason)
                 csv_writer.writerow([status, folder, reason])
 
-    with Progress(console=console, transient=True) as progress:
+    with Progress(console=c_console, transient=True) as progress:
         task = progress.add_task("[cyan]📄 正在检查音频文件...", total=len(folder_audio))
         # 处理每个包含音频的目录
         for folder in sorted(folder_audio.keys()):
@@ -107,7 +107,7 @@ def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, cons
                         if bitrate <= min_bit:
                             status = '低比特率'
                             reason = f"当前: {bitrate}kbps"
-                            table.add_row(f"[red]{status}[/]", filepath, reason)
+                            table.add_row(f"[red]{status}[/]", str(filepath), reason)
                             csv_writer.writerow([status, filepath, reason])
 
                     # 元数据检查
@@ -120,11 +120,11 @@ def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, cons
                             'TRCK': '曲目号', 'TCON': '流派', 'TDRC': '年份'
                         }
                         for key, name in checks.items():
-                            if name in skip_tags:
+                            if name in c_skip_tags:
                                 continue
                             if not tags or key not in tags or not tags.get(key):
                                 meta_missing.append(name)
-                        if '封面' not in skip_tags and ('APIC:' not in tags if tags else True):
+                        if '封面' not in c_skip_tags and ('APIC:' not in tags if tags else True):
                             meta_missing.append('封面')
                     elif ext == '.flac':
                         flac = FLAC(filepath)
@@ -133,11 +133,11 @@ def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, cons
                             'tracknumber': '曲目号', 'genre': '流派', 'date': '年份'
                         }
                         for key, name in checks.items():
-                            if name in skip_tags:
+                            if name in c_skip_tags:
                                 continue
                             if not flac.tags or key not in flac.tags:
                                 meta_missing.append(name)
-                        if '封面' not in skip_tags and not flac.pictures:
+                        if '封面' not in c_skip_tags and not flac.pictures:
                             meta_missing.append('封面')
                     elif ext == '.m4a':
                         m4a = MP4(filepath)
@@ -146,26 +146,26 @@ def check_audio_files(directory, min_count, min_bit, skip_tags, csv_writer, cons
                             'trkn': '曲目号', '\u00a9gen': '流派', '\u00a9day': '年份'
                         }
                         for key, name in checks.items():
-                            if name in skip_tags:
+                            if name in c_skip_tags:
                                 continue
                             if not m4a.tags or key not in m4a.tags:
                                 meta_missing.append(name)
-                        if '封面' not in skip_tags and 'covr' not in m4a.tags:
+                        if '封面' not in c_skip_tags and 'covr' not in m4a.tags:
                             meta_missing.append('封面')
                     if meta_missing:
                         status = '元数据缺失'
                         reason = '缺少: ' + ', '.join(meta_missing)
-                        table.add_row(f"[yellow]{status}[/]", filepath, reason)
+                        table.add_row(f"[yellow]{status}[/]", str(filepath), reason)
                         csv_writer.writerow([status, filepath, reason])
 
                 except Exception as e:
                     status = '处理失败'
                     reason = str(e)
-                    table.add_row(f"[magenta]{status}[/]", filepath, reason)
+                    table.add_row(f"[magenta]{status}[/]", str(filepath), reason)
                     csv_writer.writerow([status, filepath, reason])
             progress.update(task, advance=1)
 
-    console.print(table)
+    c_console.print(table)
 
 
 if __name__ == "__main__":
