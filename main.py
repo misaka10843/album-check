@@ -142,7 +142,7 @@ def check_audio_files(directory, min_count, min_bit, c_skip_tags, c_dup_tags, cs
                 child.startswith(folder + os.sep) and child in folder_audio
                 for child in folder_audio.keys()
             )
-            if has_child_audio:
+            if has_child_audio and folder != directory:
                 status = '嵌套目录'
                 reason = '此目录无音频，但子目录中存在音频文件'
                 table.add_row(f"[magenta3]{status}[/]", folder, reason)
